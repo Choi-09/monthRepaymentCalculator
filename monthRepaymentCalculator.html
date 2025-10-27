@@ -1,0 +1,482 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>개인회생 월 변제금 계산</title>
+    <!-- Tailwind CSS CDN -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        /* 사용자 정의 스타일 */
+        @import url('https://fonts.googleapis.com/css2?family=Noto+Sans+KR:wght@300;400;700&display=swap');
+        body {
+            font-family: 'Noto Sans KR', sans-serif;
+            background-color: #f4f7f9;
+        }
+        .input-krw {
+            /* 콤마(,) 표시를 위한 폰트 설정 (숫자 간격 유지) */
+            font-variant-numeric: tabular-nums;
+        }
+        /* Range Slider Custom Styling for better visibility */
+        input[type=range]::-webkit-slider-thumb {
+            -webkit-appearance: none;
+            width: 20px;
+            height: 20px;
+            background: #4f46e5; /* primary color */
+            border-radius: 50%;
+            cursor: pointer;
+            box-shadow: 0 0 5px rgba(0, 0, 0, 0.2);
+        }
+        input[type=range]::-moz-range-thumb {
+            width: 20px;
+            height: 20px;
+            background: #4f46e5;
+            border-radius: 50%;
+            cursor: pointer;
+            box-shadow: 0 0 5px rgba(0, 0, 0, 0.2);
+        }
+        input[type=range]::-ms-thumb {
+            width: 20px;
+            height: 20px;
+            background: #4f46e5;
+            border-radius: 50%;
+            cursor: pointer;
+            box-shadow: 0 0 5px rgba(0, 0, 0, 0.2);
+        }
+        input[type=range] {
+            height: 8px;
+        }
+        .loading-spinner {
+            border: 4px solid rgba(0, 0, 0, 0.1);
+            border-top: 4px solid #4f46e5;
+            border-radius: 50%;
+            width: 24px;
+            height: 24px;
+            animation: spin 1s linear infinite;
+        }
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+    </style>
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    colors: {
+                        'primary': '#4f46e5', /* Indigo 600 */
+                        'primary-dark': '#4338ca', /* Indigo 700 */
+                        'secondary': '#10b981', /* Emerald 500 */
+                    }
+                }
+            }
+        }
+    </script>
+</head>
+<body class="p-4 sm:p-8 flex items-center justify-center min-h-screen">
+
+<div class="w-full max-w-3xl bg-white shadow-2xl rounded-xl p-6 sm:p-10 border border-gray-100">
+    <h1 class="text-3xl sm:text-4xl font-extrabold text-primary mb-2 text-center">
+        개인회생 월 변제금 계산
+    </h1>
+    <p class="text-center text-gray-500 mb-2">
+        법률사무소 백균 회생파산 팀에서 무료로 제공하는 **안내용 계산기**입니다.
+    </p>
+    <p class="text-center text-sm text-red-500 mb-4">
+        <span class="font-bold">주의:</span> 이 계산기는 참고용이며, 정확한 금액은 **청산가치, 통장 거래내역, 재산처분** 등 수많은 자료 검토를 마친 후 **실제 상담을 통해서만** 알 수 있습니다.
+    </p>
+
+    <!-- 상담 전화번호 추가 --><p class="text-center text-lg font-bold text-primary-dark mb-8 p-3 bg-indigo-50 rounded-lg border border-indigo-200">
+    정확하고 충분한 상담 진행은 <a href="tel:0517031909" class="underline hover:text-red-600">051-703-1909</a> 로 전화 주십시오.
+</p>
+
+    <!-- 백균 로고 추가 (URL로 변경) --><div class="flex justify-center mb-8">
+    <img
+            src="https://search.pstatic.net/common/?src=https%3A%2F%2Fldb-phinf.pstatic.net%2F20251026_70%2F1761440955431rw3Hq_JPEG%2F%25B3%25D7%25C0%25CC%25B9%25F6%25B8%25DE%25C0%25CE%25B7%25CE%25B0%25ED.jpg"
+            alt="법률사무소 백균 로고"
+            class="h-20 sm:h-24 w-auto rounded-lg shadow-md"
+            onerror="this.onerror=null; this.src='https://placehold.co/100x60/4f46e5/ffffff?text=백균+로고';"
+    >
+</div>
+
+    <!-- 입력 섹션 --><div class="space-y-6">
+
+    <!-- 1. 실 소득 (세후) --><div>
+    <label for="netIncome" class="block text-sm font-medium text-gray-700 mb-1">
+        1. 의뢰인 실 소득 (세후, 통장 입금액 기준)
+    </label>
+    <div class="relative mt-1 rounded-md shadow-sm">
+        <input type="text" id="netIncome" value="2,500,000" min="0" oninput="handleNumberInput(event)" class="input-krw block w-full rounded-md border-gray-300 pr-12 focus:border-primary focus:ring-primary p-3 border" placeholder="2,500,000">
+        <div class="pointer-events-none absolute inset-y-0 right-0 flex items-center pr-3">
+            <span class="text-gray-500 sm:text-sm">원</span>
+        </div>
+    </div>
+</div>
+
+    <!-- 2. 최저생계비 기준 선택 및 입력 --><div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+    <!-- 기준 연도 선택 드롭다운 --><div>
+    <label for="mleStandard" class="block text-sm font-medium text-gray-700 mb-1">
+        2. 적용 기준 연도 선택
+    </label>
+    <select id="mleStandard" onchange="updateMleDefault()" class="block w-full rounded-md border-gray-300 focus:border-primary focus:ring-primary p-3 border bg-white">
+        <!-- 2024년 기준 삭제 --><option value="2025" selected>2025년 기준 (60%)</option>
+        <option value="2026">2026년 기준 (업데이트)</option>
+    </select>
+</div>
+    <!-- 가구원 수 선택 드롭다운 --><div>
+    <label for="householdSize" class="block text-sm font-medium text-gray-700 mb-1">
+        3. 가구원 수 (부양가족 포함)
+    </label>
+    <select id="householdSize" onchange="updateMleDefault()" class="block w-full rounded-md border-gray-300 focus:border-primary focus:ring-primary p-3 border bg-white">
+        <option value="1" selected>1인 가구</option> <!-- 1인 가구로 기본 세팅 변경 --><option value="2">2인 가구</option>
+        <option value="3">3인 가구</option>
+        <option value="4">4인 가구</option>
+        <option value="5">5인 가구</option>
+        <option value="6">6인 가구</option>
+    </select>
+</div>
+    <!-- 실제 최저생계비 입력 --><div>
+    <label for="mleAmount" class="block text-sm font-medium text-gray-700 mb-1">
+        4. 적용 최저생계비 금액 (원)
+    </label>
+    <div class="relative mt-1 rounded-md shadow-sm">
+        <!-- 1인 가구(2025년) 기본값으로 변경 (1,435,208) --><input type="text" id="mleAmount" value="1,435,208" min="0" oninput="handleNumberInput(event)" class="input-krw block w-full rounded-md border-gray-300 pr-12 focus:border-primary focus:ring-primary p-3 border" placeholder="자동 입력됩니다">
+        <div class="pointer-events-none absolute inset-y-0 right-0 flex items-center pr-3">
+            <span class="text-gray-500 sm:text-sm">원</span>
+        </div>
+    </div>
+    <p class="mt-1 text-xs text-gray-500">부양가족 수 및 실제 인정 금액에 따라 직접 수정할 수 있습니다.</p>
+</div>
+</div>
+
+    <!-- 5. 변제 기간 선택 --><div>
+    <label for="repaymentTerm" class="block text-sm font-medium text-gray-700 mb-1">
+        5. 변제 기간 선택 (최소 24개월 ~ 최대 60개월)
+        <span id="repaymentTermValue" class="font-bold text-primary ml-2">36개월</span>
+    </label>
+    <div class="relative mt-1 rounded-md shadow-sm">
+        <input type="range" id="repaymentTerm" value="36" min="24" max="60" step="1" oninput="updateRepaymentTermDisplay(); calculate();" class="w-full h-2 bg-gray-200 rounded-lg appearance-none cursor-pointer">
+    </div>
+    <div class="flex justify-between text-xs text-gray-500 mt-1">
+        <span>24개월</span>
+        <span>36개월</span>
+        <span>60개월</span>
+    </div>
+</div>
+
+    <!-- 6. 총 채무 금액 --><div>
+    <label for="totalDebt" class="block text-sm font-medium text-gray-700 mb-1">
+        6. 총 채무 금액 (원금 기준)
+    </label>
+    <div class="relative mt-1 rounded-md shadow-sm">
+        <!-- 기본값을 90,000,000에서 120,000,000으로 변경 --><input type="text" id="totalDebt" value="120,000,000" min="0" oninput="handleNumberInput(event)" class="input-krw block w-full rounded-md border-gray-300 pr-12 focus:border-primary focus:ring-primary p-3 border" placeholder="120,000,000">
+        <div class="pointer-events-none absolute inset-y-0 right-0 flex items-center pr-3">
+            <span class="text-gray-500 sm:text-sm">원</span>
+        </div>
+    </div>
+</div>
+</div>
+
+    <!-- 결과 섹션 --><div class="mt-10 pt-6 border-t border-gray-200">
+    <h2 class="text-2xl font-bold text-primary-dark mb-4" id="resultsHeading">
+        산출 결과 (36개월 변제 기준)
+    </h2>
+
+    <div id="results" class="space-y-4">
+        <!-- 1. 월 변제금 (가용소득) --><div class="bg-indigo-50 p-4 rounded-lg shadow-md flex justify-between items-center">
+        <span class="text-base font-semibold text-gray-700">월 변제금 (가용소득)</span>
+        <span id="monthlyPayment" class="text-2xl font-extrabold text-primary">0 원</span>
+    </div>
+
+        <!-- 2. 총 변제액 --><div class="bg-indigo-50 p-4 rounded-lg shadow-md flex justify-between items-center">
+        <span class="text-base font-semibold text-gray-700" id="totalPaymentLabel">36개월 총 변제 예정액</span>
+        <span id="totalPayment" class="text-2xl font-extrabold text-primary">0 원</span>
+    </div>
+
+        <!-- 3. 총 채무 대비 변제율 --><div class="bg-secondary p-4 rounded-lg shadow-lg flex justify-between items-center">
+        <span class="text-base font-bold text-white">총 채무액 대비 변제율</span>
+        <span id="repaymentRate" class="text-3xl font-extrabold text-white">0.00 %</span>
+    </div>
+    </div>
+
+    <!-- Gemini 기능 추가 -->
+    <div class="mt-8">
+        <button onclick="generateAdvice()" class="w-full bg-secondary hover:bg-emerald-600 text-white font-bold py-3 px-4 rounded-lg transition duration-200 flex items-center justify-center disabled:opacity-50" id="geminiButton">
+            <span id="geminiButtonText">✨ 회생 계획 코멘트 생성</span>
+            <div id="geminiLoading" class="loading-spinner ml-2 hidden"></div>
+        </button>
+        <div id="aiAdviceContainer" class="mt-4 bg-gray-50 p-4 rounded-lg border border-gray-200 hidden">
+            <h3 class="font-bold text-lg text-primary-dark mb-2">Gemini AI의 재정 재건 조언:</h3>
+            <p id="aiAdviceText" class="text-gray-700 whitespace-pre-wrap"></p>
+        </div>
+    </div>
+
+    <!-- 오류 메시지 --><div id="errorMessage" class="mt-4 hidden bg-red-100 border border-red-400 text-red-700 px-4 py-3 rounded-md" role="alert">
+    <p class="font-bold">계산 오류:</p>
+    <p class="text-sm">실 소득이 최저생계비보다 적거나 총 채무액이 0원일 경우 정확한 계산이 어렵습니다. (월 변제금은 0원보다 커야 합니다.)</p>
+</div>
+</div>
+</div>
+
+<script>
+    const NET_INCOME_INPUT = document.getElementById('netIncome');
+    const MLE_AMOUNT_INPUT = document.getElementById('mleAmount');
+    const TOTAL_DEBT_INPUT = document.getElementById('totalDebt');
+    const MLE_STANDARD_SELECT = document.getElementById('mleStandard');
+    const HOUSEHOLD_SIZE_SELECT = document.getElementById('householdSize');
+    // 변제 기간 관련 요소
+    const REPAYMENT_TERM_INPUT = document.getElementById('repaymentTerm');
+    const REPAYMENT_TERM_VALUE = document.getElementById('repaymentTermValue');
+
+    const MONTHLY_PAYMENT_OUTPUT = document.getElementById('monthlyPayment');
+    const TOTAL_PAYMENT_OUTPUT = document.getElementById('totalPayment');
+    const REPAYMENT_RATE_OUTPUT = document.getElementById('repaymentRate');
+    const ERROR_MESSAGE = document.getElementById('errorMessage');
+    // 동적 제목 및 라벨 요소
+    const RESULTS_HEADING = document.getElementById('resultsHeading');
+    const TOTAL_PAYMENT_LABEL = document.getElementById('totalPaymentLabel');
+
+    // Gemini 관련 요소
+    const GEMINI_BUTTON = document.getElementById('geminiButton');
+    const GEMINI_BUTTON_TEXT = document.getElementById('geminiButtonText');
+    const GEMINI_LOADING = document.getElementById('geminiLoading');
+    const AI_ADVICE_CONTAINER = document.getElementById('aiAdviceContainer');
+    const AI_ADVICE_TEXT = document.getElementById('aiAdviceText');
+
+    const MLE_DEFAULTS = {
+        '2025': {
+            '1': 1435208,
+            '2': 2359595,
+            '3': 3015212,
+            '4': 3658664,
+            '5': 4264915,
+            '6': 4838883
+        },
+        '2026': {
+            '1': 1538543,
+            '2': 2519575,
+            '3': 3215422,
+            '4': 3896843,
+            '5': 4563459,
+            '6': 5177604
+        }
+    };
+
+    /**
+     * 숫자에 콤마를 추가하고 정수로 변환하는 헬퍼 함수
+     * @param {number} number
+     * @returns {string} 콤마가 추가된 문자열 (예: "2,300,000")
+     */
+    function formatNumber(number) {
+        return new Intl.NumberFormat('ko-KR').format(Math.floor(number));
+    }
+
+    /**
+     * 콤마를 제거하고 숫자 값만 추출하는 헬퍼 함수
+     * @param {string} formattedString
+     * @returns {number} 콤마가 제거된 정수 값
+     */
+    function unformatNumber(formattedString) {
+        if (typeof formattedString !== 'string') return 0;
+        const rawValue = formattedString.replace(/,/g, '');
+        return parseInt(rawValue) || 0;
+    }
+
+    /**
+     * 입력 필드의 값을 실시간으로 포맷팅하고 계산을 트리거합니다.
+     */
+    function handleNumberInput(event) {
+        const input = event.target;
+        const rawValue = input.value.replace(/[^\d]/g, '');
+
+        if (rawValue) {
+            input.value = formatNumber(parseInt(rawValue));
+        } else {
+            input.value = "";
+        }
+
+        calculate();
+    }
+
+    /**
+     * 최저생계비 기준 연도와 가구원 수에 따라 기본값을 MLE 입력란에 자동 적용합니다.
+     */
+    function updateMleDefault() {
+        const selectedYear = MLE_STANDARD_SELECT.value;
+        const selectedSize = HOUSEHOLD_SIZE_SELECT.value;
+
+        const defaultAmount = MLE_DEFAULTS[selectedYear] ? MLE_DEFAULTS[selectedYear][selectedSize] : null;
+
+        if (defaultAmount !== null && defaultAmount !== undefined) {
+            MLE_AMOUNT_INPUT.value = formatNumber(defaultAmount);
+        } else {
+            MLE_AMOUNT_INPUT.value = '0';
+        }
+        calculate();
+    }
+
+    /**
+     * 변제 기간 슬라이더 값을 표시합니다.
+     */
+    function updateRepaymentTermDisplay() {
+        REPAYMENT_TERM_VALUE.textContent = `${REPAYMENT_TERM_INPUT.value}개월`;
+    }
+
+
+    /**
+     * 모든 값을 가져와 변제금을 계산하고 결과를 업데이트합니다.
+     * @returns {object|null} 계산된 재무 지표 객체 또는 오류 시 null
+     */
+    function calculate() {
+        const netIncome = unformatNumber(NET_INCOME_INPUT.value);
+        const mleAmount = unformatNumber(MLE_AMOUNT_INPUT.value);
+        const totalDebt = unformatNumber(TOTAL_DEBT_INPUT.value);
+        const repaymentMonths = parseInt(REPAYMENT_TERM_INPUT.value) || 36;
+
+        let disposableIncome = netIncome - mleAmount;
+
+        RESULTS_HEADING.textContent = `산출 결과 (${repaymentMonths}개월 변제 기준)`;
+        TOTAL_PAYMENT_LABEL.textContent = `${repaymentMonths}개월 총 변제 예정액`;
+
+        // Gemini 버튼 상태 업데이트
+        GEMINI_BUTTON.disabled = (disposableIncome <= 0 || totalDebt <= 0);
+
+        if (disposableIncome <= 0 || totalDebt <= 0) {
+            MONTHLY_PAYMENT_OUTPUT.textContent = '0 원';
+            TOTAL_PAYMENT_OUTPUT.textContent = '0 원';
+            REPAYMENT_RATE_OUTPUT.textContent = '0.00 %';
+            ERROR_MESSAGE.classList.remove('hidden');
+            // 계산 오류 시 null 반환
+            return null;
+        }
+
+        ERROR_MESSAGE.classList.add('hidden');
+
+        const totalRepayment = disposableIncome * repaymentMonths;
+        const repaymentRate = (totalRepayment / totalDebt) * 100;
+
+        MONTHLY_PAYMENT_OUTPUT.textContent = `${formatNumber(disposableIncome)} 원`;
+        TOTAL_PAYMENT_OUTPUT.textContent = `${formatNumber(totalRepayment)} 원`;
+        REPAYMENT_RATE_OUTPUT.textContent = `${repaymentRate.toFixed(2)} %`;
+
+        // 계산된 재무 지표 반환
+        return {
+            netIncome,
+            mleAmount,
+            disposableIncome,
+            totalDebt,
+            repaymentMonths,
+            repaymentRate: repaymentRate.toFixed(2)
+        };
+    }
+
+    // ==========================================================
+    // Gemini API Functions
+    // ==========================================================
+    const API_URL = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash-preview-09-2025:generateContent?key=`;
+    const API_KEY = ""; // Canvas runtime provides this
+
+    /**
+     * Gemini API 호출 및 지수 백오프 적용
+     * @param {object} payload API 요청 페이로드
+     * @param {number} maxRetries 최대 재시도 횟수
+     * @param {number} delay 현재 지연 시간 (밀리초)
+     */
+    async function callGeminiApi(payload, maxRetries = 3, delay = 1000) {
+        for (let i = 0; i < maxRetries; i++) {
+            try {
+                const response = await fetch(API_URL + API_KEY, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(payload)
+                });
+
+                if (response.ok) {
+                    return await response.json();
+                } else if (response.status === 429 && i < maxRetries - 1) {
+                    // 429 Too Many Requests (Rate Limit) & Not the last try: Retry with exponential backoff
+                    console.log(`Rate limit hit. Retrying in ${delay / 1000}s...`);
+                    await new Promise(resolve => setTimeout(resolve, delay));
+                    delay *= 2; // Exponential backoff
+                    continue;
+                } else {
+                    throw new Error(`API call failed with status: ${response.status}`);
+                }
+            } catch (error) {
+                if (i === maxRetries - 1) {
+                    throw new Error("Gemini API 호출에 실패했습니다: " + error.message);
+                }
+                console.log(`Error during fetch: ${error.message}. Retrying in ${delay / 1000}s...`);
+                await new Promise(resolve => setTimeout(resolve, delay));
+                delay *= 2;
+            }
+        }
+    }
+
+    /**
+     * 계산 결과를 바탕으로 Gemini AI에게 조언 생성을 요청합니다.
+     */
+    async function generateAdvice() {
+        const metrics = calculate();
+
+        // 유효성 검사
+        if (!metrics) {
+            AI_ADVICE_TEXT.textContent = "계산 오류가 발생하여 조언을 생성할 수 없습니다. 소득과 채무액을 확인해 주세요.";
+            AI_ADVICE_CONTAINER.classList.remove('hidden');
+            return;
+        }
+
+        // UI 로딩 상태 시작
+        GEMINI_BUTTON.disabled = true;
+        GEMINI_LOADING.classList.remove('hidden');
+        GEMINI_BUTTON_TEXT.textContent = 'AI가 코멘트 생성 중...';
+        AI_ADVICE_TEXT.textContent = '조언을 생성 중입니다... 잠시만 기다려 주세요.';
+        AI_ADVICE_CONTAINER.classList.remove('hidden');
+
+        const { netIncome, mleAmount, disposableIncome, totalDebt, repaymentMonths, repaymentRate } = metrics;
+
+        const systemPrompt = "당신은 개인회생 전문 법률 사무소의 친절하고 희망적인 재무 컨설턴트입니다. 사용자에게 전달된 월 변제금 계산 결과를 바탕으로, 용기와 동기 부여를 제공하는 조언을 5줄 이내의 짧은 단락으로 생성해주세요. 다음 내용을 필수로 포함해야 합니다: 1) 현재 변제율에 대한 간결한 평가 (예: '매우 양호', '노력이 필요'), 2) 남은 변제 기간 동안 긍정적인 행동을 유도하는 구체적인 실천 방안 (예: '추가 소득 창출', '비용 절감'), 3) 힘든 과정을 잘 해낼 수 있다는 격려의 말. 그리고 마지막 문장으로 '더 정확하고 상세한 개인회생 상담은 051-703-1909로 전화하여 백균 회생파산 팀에 꼭 문의하고 도움을 받으세요.'라는 내용을 명시해야 합니다. 법률적인 조언이 아닌, 재정 재건을 위한 동기 부여 메시지여야 합니다.";
+
+        const userQuery = `
+                현재 재정 상황 분석:
+                - 실 소득: ${formatNumber(netIncome)}원
+                - 최저 생계비: ${formatNumber(mleAmount)}원
+                - 월 변제금 (가용 소득): ${formatNumber(disposableIncome)}원
+                - 총 채무 금액: ${formatNumber(totalDebt)}원
+                - 변제 기간: ${repaymentMonths}개월
+                - 총 채무 대비 변제율: ${repaymentRate}%
+
+                이 정보를 바탕으로 사용자에게 용기를 북돋는 희망적인 조언을 5줄 이내로 작성해 주세요.
+            `;
+
+        const payload = {
+            contents: [{ parts: [{ text: userQuery }] }],
+            systemInstruction: { parts: [{ text: systemPrompt }] },
+        };
+
+        try {
+            const result = await callGeminiApi(payload);
+            const text = result.candidates?.[0]?.content?.parts?.[0]?.text || "AI 조언을 가져오는 데 실패했습니다. 잠시 후 다시 시도해 주세요.";
+            AI_ADVICE_TEXT.textContent = text;
+
+        } catch (error) {
+            console.error(error);
+            AI_ADVICE_TEXT.textContent = "API 호출 중 오류가 발생했습니다. 잠시 후 다시 시도해 주세요.";
+        } finally {
+            // UI 로딩 상태 종료
+            GEMINI_BUTTON.disabled = false;
+            GEMINI_LOADING.classList.add('hidden');
+            GEMINI_BUTTON_TEXT.textContent = '✨ 회생 계획 코멘트 생성';
+        }
+    }
+
+    // 초기 로드 시 계산 실행
+    window.onload = function() {
+        updateRepaymentTermDisplay();
+        updateMleDefault();
+    };
+
+</script>
+
+</body>
+</html>
